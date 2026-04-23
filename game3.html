@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spy Dealer</title>
+  <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3f 100%);
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.6s ease-out;
+            padding: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .header {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d4ff 0%, #ff006e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 0, 110, 0.6)); }
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #00d4ff;
+            margin-top: 8px;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #ff006e 0%, #ff4081 100%);
+            color: #ffffff;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.6);
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            display: block;
+        }
+
+        .start-button.hidden {
+            display: none;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.9);
+        }
+
+        .start-button:active {
+            transform: scale(0.98);
+        }
+
+        .restart-button {
+            background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%);
+            color: #1a1a3f;
+            border: 2px solid #00d4ff;
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            display: none;
+        }
+
+        .restart-button.visible {
+            display: block;
+        }
+
+        .restart-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.8);
+        }
+
+        .restart-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Reveal button shown at round end */
+        .reveal-button {
+            background: linear-gradient(135deg, #ffb100 0%, #ff8a00 100%);
+            color: #1a1a1a;
+            border: 2px solid #ffb100;
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 12px rgba(255, 138, 0, 0.25);
+            transition: all 0.2s ease;
+            font-family: 'Courier New', monospace;
+            display: none;
+            position: relative;
+            z-index: 1100;
+            margin-bottom: 12px;
+        }
+
+        .reveal-button.visible { display: block; }
+
+        /* Small history button (opens history modal) */
+        .history-button {
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            color: #00d4ff;
+            border: 2px solid rgba(0,212,255,0.12);
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+            transition: all 0.15s ease;
+            display: inline-block;
+            z-index: 1100;
+            margin-bottom: 10px;
+        }
+        .history-button:hover { transform: translateY(-2px); }
+
+        .player-id {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .player-id.active {
+            animation: idPulse 0.6s ease-out;
+        }
+
+        @keyframes idPulse {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .display {
+            background: rgba(0, 212, 255, 0.1);
+            border: 3px solid #00d4ff;
+            border-radius: 8px;
+            padding: 30px 20px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #00d4ff;
+            box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.2), 0 0 20px rgba(0, 212, 255, 0.3);
+            word-wrap: break-word;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .display:hover:not(.locked) {
+            transform: scale(1.02);
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.3), 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .display.locked {
+            cursor: default;
+        }
+
+        .display-hidden {
+            font-size: 1.2rem;
+            color: #00d4ff;
+            opacity: 0.8;
+        }
+
+        .display-revealed {
+            color: #00d4ff;
+            animation: revealGlow 0.4s ease-out;
+        }
+
+        .display-revealed.spy {
+            color: #ff006e;
+            border-color: #ff006e;
+            background: rgba(255, 0, 110, 0.1);
+            box-shadow: inset 0 0 20px rgba(255, 0, 110, 0.3), 0 0 30px rgba(255, 0, 110, 0.4);
+            animation: spyReveal 0.5s ease-out;
+        }
+
+        @keyframes revealGlow {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes spyReveal {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .grid {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            flex: 1;
+            align-content: start;
+        }
+
+        .player-btn {
+            background: linear-gradient(135deg, #1a1a3f 0%, #2d2d5f 100%);
+            border: 2px solid #00d4ff;
+            color: #00d4ff;
+            padding: 20px 10px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .player-btn:hover {
+            transform: translateY(-3px);
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+        }
+
+        .player-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
+        }
+
+        .player-btn:hover::before {
+            left: 100%;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #00d4ff;
+            opacity: 0.6;
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        .setup-screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .setup-screen.hidden {
+            display: none;
+        }
+
+        .setup-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .teams-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .team-section {
+            flex: 1;
+            min-width: 150px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .team-label {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff006e;
+            text-align: center;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .players-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .player-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid #00d4ff;
+            color: #ffffff;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .player-input::placeholder {
+            color: rgba(0, 212, 255, 0.5);
+        }
+
+        .player-input:focus {
+            outline: none;
+            border-color: #ff006e;
+            background: rgba(255, 0, 110, 0.1);
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.4);
+        }
+
+        .setup-toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #00d4ff 0%, #00a8cc 100%);
+            color: #1a1a3f;
+            border: 2px solid #00d4ff;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            z-index: 100;
+        }
+
+        .setup-toggle-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.8);
+        }
+
+        .setup-toggle-btn:active {
+            transform: scale(0.98);
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10050; /* must sit above the display tile */
+            backdrop-filter: blur(6px);
+        }
+
+        .modal-backdrop.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3f 100%);
+            border: 3px solid #00d4ff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.4);
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+            z-index: 10060; /* above backdrop and page UI */
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        /* Modal-specific restart button: show inside modal and make it smaller than begin button */
+        .modal-content .restart-button {
+            display: inline-block;
+            width: auto;
+            padding: 8px 18px;
+            font-size: 0.95rem;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        /* when modal backdrop is visible, hide the main display tile so nothing bleeds through */
+        .modal-backdrop.visible ~ .display {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff006e;
+            color: #ffffff;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.3rem;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close-btn:hover {
+            transform: scale(1.1);
+            background: #ff4081;
+        }
+
+        .modal-title {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .modal-begin-btn {
+            background: linear-gradient(135deg, #ff006e 0%, #ff4081 100%);
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.6);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            width: 100%;
+        }
+
+        .modal-begin-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.9);
+        }
+
+        .modal-begin-btn:active {
+            transform: scale(0.98);
+        }
+        /* Mobile: enlarge & center main tile */
+        @media (max-width: 600px) {
+            .container {
+                position: relative;
+                padding: 12px;
+                padding-top: 84px; /* add extra top space so header isn't covered */
+                height: 100vh;
+                justify-content: center;
+            }
+
+            /* Use absolute positioning so the tile centers relative to the app container
+               (fixes devtools/device-emulation centering issues with position:fixed). */
+            .display {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: calc(100% - 32px);
+                max-width: 520px;
+                min-height: 260px;
+                padding: 28px 20px;
+                font-size: 2rem;
+                border-width: 4px;
+                border-radius: 12px;
+                z-index: 999;
+            }
+
+            .display .player-id {
+                font-size: 2.8rem;
+            }
+
+            /* Preserve centering transform when applying hover scale on mobile */
+            .display:hover:not(.locked) {
+                transform: translate(-50%, -50%) scale(1.02);
+            }
+
+            #displayContent {
+                font-size: 1.4rem;
+                white-space: pre-line;
+            }
+
+            /* keep auxiliary UI out of the way */
+            .grid { display: none; }
+        }
+    </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body>
+  <a href="index.html" class="absolute top-6 left-6 z-[100] p-3 rounded-full bg-slate-800 border border-slate-600 hover:border-sky-500 hover:bg-slate-700 transition duration-300">
+     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+   </a>
+  <div class="container"><button class="setup-toggle-btn" onclick="openSetupModal()">⚙️ SETUP</button>
+   <div class="header">
+    <div class="title">
+     SPY DEALER
+    </div>
+    <div class="subtitle">
+     Who's the impostor?
+    </div>
+    </div>
+    <button class="start-button reveal-button" id="revealImpostorsBtn" onclick="revealImpostors()">REVEAL SPY</button>
+    <button class="history-button" id="historyButton" onclick="openHistoryModal()">HISTORY</button>
+   <div id="setupModal" class="modal-backdrop">
+        <div class="modal-content"><button class="modal-close-btn" onclick="closeSetupModal()">✕</button>
+      <div class="modal-title">
+        Enter Player Names
+      </div>
+      <div class="teams-container">
+      <div class="team-section">
+       <div class="team-label">
+                <input type="text" class="player-input team-name-input" data-team="A" placeholder="Team A">
+       </div>
+       <div class="players-list">
+        <input type="text" class="player-input" placeholder="Player 1" data-team="A" data-player="1"> <input type="text" class="player-input" placeholder="Player 2" data-team="A" data-player="2"> <input type="text" class="player-input" placeholder="Player 3" data-team="A" data-player="3"> <input type="text" class="player-input" placeholder="Player 4" data-team="A" data-player="4"> <input type="text" class="player-input" placeholder="Player 5" data-team="A" data-player="5"> <input type="text" class="player-input" placeholder="Player 6" data-team="A" data-player="6">
+       </div>
+      </div>
+      <div class="team-section">
+       <div class="team-label">
+                <input type="text" class="player-input team-name-input" data-team="B" placeholder="Team B">
+       </div>
+       <div class="players-list">
+        <input type="text" class="player-input" placeholder="Player 1" data-team="B" data-player="1"> <input type="text" class="player-input" placeholder="Player 2" data-team="B" data-player="2"> <input type="text" class="player-input" placeholder="Player 3" data-team="B" data-player="3"> <input type="text" class="player-input" placeholder="Player 4" data-team="B" data-player="4"> <input type="text" class="player-input" placeholder="Player 5" data-team="B" data-player="5"> <input type="text" class="player-input" placeholder="Player 6" data-team="B" data-player="6">
+       </div>
+      </div>
+      <div class="team-section">
+       <div class="team-label">
+                <input type="text" class="player-input team-name-input" data-team="C" placeholder="Team C">
+       </div>
+       <div class="players-list">
+        <input type="text" class="player-input" placeholder="Player 1" data-team="C" data-player="1"> <input type="text" class="player-input" placeholder="Player 2" data-team="C" data-player="2"> <input type="text" class="player-input" placeholder="Player 3" data-team="C" data-player="3"> <input type="text" class="player-input" placeholder="Player 4" data-team="C" data-player="4"> <input type="text" class="player-input" placeholder="Player 5" data-team="C" data-player="5"> <input type="text" class="player-input" placeholder="Player 6" data-team="C" data-player="6">
+       </div>
+      </div>
+                 </div>
+                   <button class="modal-begin-btn" onclick="beginGameFromModal()">BEGIN GAME</button>
+                   <div style="text-align:center; margin-top:10px;">
+                       <button class="restart-button" id="clearPlayersBtn" onclick="clearPlayerData()" style="background: linear-gradient(135deg, #ff006e 0%, #ff4081 100%); color: #fff; border: 2px solid #ff006e; margin-right:8px;">CLEAR PLAYER DATA</button>
+                       <button class="restart-button" onclick="startRound()">RESTART GAME</button>
+                   </div>
+        </div>
+     </div>
+
+    <div id="historyModal" class="modal-backdrop">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="closeHistoryModal()">✕</button>
+            <div class="modal-title">Round History</div>
+            <div id="historyList" style="max-height:50vh; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:4px;"></div>
+            <div style="display:flex; gap:8px; margin-top:12px; justify-content:flex-end;">
+                <button class="modal-begin-btn" style="width:auto; padding:8px 12px;" onclick="clearHistory()">Clear History</button>
+                <button class="restart-button" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+     <div class="display" id="display">
+    <div class="player-id" id="playerIdDisplay"></div>
+    <div id="displayContent" class="display-hidden">
+     TAP TO REVEAL
+    </div>
+    </div><button class="restart-button" id="restartButton" onclick="startRound()">RESTART GAME</button>
+    <div class="grid" id="playerGrid"></div>
+   <div class="footer">
+    Pass the phone between players
+   </div>
+  </div>
+    <script>
+        (function () {
+            const words = [
+                "Coffee Cup","Phone","Backpack","Pillow","Laptop","Wallet",
+                "Toothbrush","Soap","Towel","Keys","Shoes","Watch",
+                "Book","Pen","Notebook","Glasses","Headphones","Door",
+                "Chair","Table","Lamp","Mirror","Plate","Fork",
+                "Spoon","Glass","Blanket","Socks","Jacket","Hat"
+            ];
+
+            const teams = ['A', 'B', 'C'];
+
+            let currentWord = '';
+            let spies = { A: 0, B: 0, C: 0 };
+            let currentTeamIndex = 0;
+            let currentPlayerInTeam = 1;
+            let isRevealed = false;
+            let gameStarted = false;
+            let playerNames = { A: {}, B: {}, C: {} };
+
+            // store last-round data & impostors for reveal
+            let impostors = [];
+            let lastGameData = null;
+            let impostorsRevealed = false;
+
+            // Cache important DOM elements once
+            const display = document.getElementById('display');
+            const displayContent = document.getElementById('displayContent');
+            const playerIdDisplay = document.getElementById('playerIdDisplay');
+            const restartButton = document.getElementById('restartButton');
+            const setupModal = document.getElementById('setupModal');
+            const startButton = document.getElementById('startButton');
+
+            // Populate sensible defaults so lookups never hit undefined
+            teams.forEach(t => {
+                for (let i = 1; i <= 6; i++) playerNames[t][i] = `${t}${i}`;
+            });
+
+            // team display names (defaults)
+            const teamDisplayNames = { A: 'Team A', B: 'Team B', C: 'Team C' };
+
+            // expose a helper to get team display
+            function getTeamDisplay(t) {
+                return playerNames[t]._teamName || teamDisplayNames[t] || t;
+            }
+
+            // Modal controls (exposed globally for inline onclick attributes)
+            window.openSetupModal = () => setupModal && setupModal.classList.add('visible');
+            window.closeSetupModal = () => setupModal && setupModal.classList.remove('visible');
+
+            window.beginGameFromModal = () => {
+                // Save player names (only actual input fields)
+                document.querySelectorAll('input.player-input[data-team][data-player]').forEach(input => {
+                    const team = input.getAttribute('data-team');
+                    const player = input.getAttribute('data-player');
+                    if (team && player) {
+                        const name = input.value.trim() || `${team}${player}`;
+                        playerNames[team][player] = name;
+                    }
+                });
+
+                // Save editable team names (if provided)
+                document.querySelectorAll('.team-name-input').forEach(input => {
+                    const t = input.getAttribute('data-team');
+                    const val = input.value.trim();
+                    if (t) {
+                        if (val) playerNames[t]._teamName = val;
+                        else delete playerNames[t]._teamName;
+                    }
+                });
+
+                // persist player names so they survive reloads
+                try { localStorage.setItem('spyDealerPlayers', JSON.stringify(playerNames)); } catch (e) { /* ignore */ }
+
+                closeSetupModal();
+                startRound();
+            };
+
+            // Start a round
+            window.startRound = () => {
+                currentWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
+                spies.A = Math.floor(Math.random() * 6) + 1;
+                spies.B = Math.floor(Math.random() * 6) + 1;
+                spies.C = Math.floor(Math.random() * 6) + 1;
+
+                // capture impostors (team, index, name) at round start
+                impostors = teams.map(t => {
+                    const idx = spies[t];
+                    const name = (playerNames[t] && playerNames[t][idx]) || `${t}${idx}`;
+                    return { team: t, player: idx, name };
+                });
+                // persist full game info (including spies) so it survives reloads
+                lastGameData = {
+                    startedAt: Date.now(),
+                    word: currentWord,
+                    spies: { A: spies.A, B: spies.B, C: spies.C },
+                    impostors: impostors,
+                    currentTeamIndex: 0,
+                    currentPlayerInTeam: 1,
+                    status: 'in-progress'
+                };
+                try { localStorage.setItem('spyDealerLastGame', JSON.stringify(lastGameData)); } catch (e) { /* ignore */ }
+
+                currentTeamIndex = 0;
+                currentPlayerInTeam = 1;
+                isRevealed = false;
+                impostorsRevealed = false;
+                gameStarted = true;
+
+                if (startButton) startButton.classList.add('hidden');
+                if (restartButton) restartButton.classList.remove('visible');
+
+                // hide reveal button while playing
+                const revealBtn = document.getElementById('revealImpostorsBtn');
+                if (revealBtn) { revealBtn.classList.remove('visible'); revealBtn.textContent = 'REVEAL SPY'; }
+
+                // ensure the display is interactive during play
+                if (display) { display.style.pointerEvents = ''; display.style.zIndex = ''; }
+
+                showCurrentPlayer();
+            };
+
+            function showCurrentPlayer() {
+                const team = teams[currentTeamIndex];
+                const playerId = `${team}${currentPlayerInTeam}`;
+                  const playerName = playerNames[team][currentPlayerInTeam] || playerId;
+
+                playerIdDisplay.textContent = playerName;
+                    // update visible team label if present
+                    const teamInputs = document.querySelectorAll('.team-name-input');
+                    if (teamInputs && teamInputs.length) {
+                        teamInputs.forEach(i => {
+                            const t = i.getAttribute('data-team');
+                            const val = playerNames[t] && playerNames[t]._teamName ? playerNames[t]._teamName : '';
+                            if (val) i.value = val;
+                        });
+                    }
+                playerIdDisplay.classList.add('active');
+
+                displayContent.textContent = 'TAP TO REVEAL';
+                displayContent.className = 'display-hidden';
+                display.classList.remove('spy', 'locked');
+
+                isRevealed = false;
+                // persist current position for auto-resume
+                if (lastGameData && lastGameData.status === 'in-progress') {
+                    lastGameData.currentTeamIndex = currentTeamIndex;
+                    lastGameData.currentPlayerInTeam = currentPlayerInTeam;
+                    try { localStorage.setItem('spyDealerLastGame', JSON.stringify(lastGameData)); } catch (e) { /* ignore */ }
+                }
+                setTimeout(() => playerIdDisplay.classList.remove('active'), 600);
+            }
+
+            function toggleReveal() {
+                if (!gameStarted) return;
+
+                const team = teams[currentTeamIndex];
+                const isSpy = spies[team] === currentPlayerInTeam;
+
+                if (!isRevealed) {
+                    if (isSpy) {
+                        displayContent.textContent = '⚠️ YOU ARE THE SPY! ⚠️';
+                        displayContent.className = 'display-revealed spy';
+                        display.classList.add('spy');
+                    } else {
+                        displayContent.textContent = `WORD:\n${currentWord}`;
+                        displayContent.className = 'display-revealed';
+                        display.classList.remove('spy');
+                    }
+                    display.classList.add('locked');
+                    isRevealed = true;
+                } else {
+                    display.classList.remove('locked');
+                    moveToNextPlayer();
+                }
+            }
+
+            function moveToNextPlayer() {
+                currentPlayerInTeam++;
+                if (currentPlayerInTeam > 6) {
+                    currentTeamIndex++;
+                    currentPlayerInTeam = 1;
+                    if (currentTeamIndex >= teams.length) {
+                        endGame();
+                        return;
+                    }
+                }
+                showCurrentPlayer();
+            }
+
+            function endGame() {
+                gameStarted = false;
+                playerIdDisplay.textContent = '✓ ROUND COMPLETE';
+                displayContent.textContent = 'TAP START ROUND FOR NEW GAME';
+                displayContent.className = 'display-hidden';
+
+                // Remove click handler so clicks don't interfere
+                if (display) display.onclick = null;
+
+                // hide external restart (restart is available in setup modal)
+                if (restartButton) restartButton.classList.remove('visible');
+                if (startButton) startButton.classList.remove('hidden');
+
+                // record that the round ended so reveal survives reloads
+                if (!lastGameData) {
+                    lastGameData = { startedAt: Date.now(), word: currentWord, spies: { A: spies.A, B: spies.B, C: spies.C }, impostors };
+                }
+                lastGameData.status = 'ended';
+                lastGameData.endedAt = Date.now();
+                try { localStorage.setItem('spyDealerLastGame', JSON.stringify(lastGameData)); } catch (e) { /* ignore */ }
+                // append to history so earlier rounds can be reviewed later
+                try { saveToHistory(lastGameData); } catch (e) { /* ignore */ }
+
+                // show single "Reveal" control at round end
+                const revealBtn = document.getElementById('revealImpostorsBtn');
+                if (revealBtn) revealBtn.classList.add('visible');
+
+                // make sure the display doesn't block the reveal button
+                if (display) { display.style.pointerEvents = 'none'; display.style.zIndex = '998'; }
+            }
+
+            // Reveal the impostors for the last round (toggle)
+            window.revealImpostors = () => {
+                const btn = document.getElementById('revealImpostorsBtn');
+                if (!impostorsRevealed) {
+                    const data = lastGameData || JSON.parse(localStorage.getItem('spyDealerLastGame') || 'null');
+                    if (!data || !data.impostors) {
+                        displayContent.textContent = 'No impostor data available';
+                        displayContent.className = 'display-hidden';
+                        return;
+                    }
+                    const lines = data.impostors.map(i => `${getTeamDisplay(i.team)} — ${i.name}`);
+                    displayContent.textContent = `IMPOSTORS:\n${lines.join('\n')}`;
+                    displayContent.className = 'display-revealed spy';
+                    display.classList.add('locked', 'spy');
+                    if (btn) btn.textContent = 'HIDE SPY';
+                    impostorsRevealed = true;
+                } else {
+                    displayContent.textContent = 'TAP START ROUND FOR NEW GAME';
+                    displayContent.className = 'display-hidden';
+                    display.classList.remove('locked', 'spy');
+                    if (btn) btn.textContent = 'REVEAL SPY';
+                    impostorsRevealed = false;
+                }
+            };
+
+            // --- History & persistence helpers ---
+            function saveToHistory(round) {
+                if (!round) return;
+                try {
+                    const hist = JSON.parse(localStorage.getItem('spyDealerHistory') || '[]');
+                    // attach a unique id if not present
+                    const entry = Object.assign({}, round);
+                    if (!entry.id) entry.id = Date.now();
+                    hist.push(entry);
+                    localStorage.setItem('spyDealerHistory', JSON.stringify(hist));
+                } catch (e) { /* ignore */ }
+            }
+
+            // Save player names helper
+            function savePlayerNamesToStorage() {
+                try { localStorage.setItem('spyDealerPlayers', JSON.stringify(playerNames)); } catch (e) { /* ignore */ }
+            }
+
+            // Restore saved player names and prefill modal inputs
+            function restorePlayerNamesFromStorage() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('spyDealerPlayers') || 'null');
+                    if (!saved) return;
+                    teams.forEach(t => {
+                        const teamSaved = saved[t] || {};
+                        for (let i = 1; i <= 6; i++) {
+                            if (typeof teamSaved[i] !== 'undefined') playerNames[t][i] = teamSaved[i];
+                        }
+                        if (teamSaved._teamName) playerNames[t]._teamName = teamSaved._teamName;
+                        // update modal inputs if present
+                        const teamInput = document.querySelector('.team-name-input[data-team="' + t + '"]');
+                        if (teamInput && playerNames[t]._teamName) teamInput.value = playerNames[t]._teamName;
+                        for (let i = 1; i <= 6; i++) {
+                            const pInput = document.querySelector('input.player-input[data-team="' + t + '"][data-player="' + i + '"]');
+                            if (pInput) pInput.value = playerNames[t][i] || '';
+                        }
+                    });
+                } catch (e) { /* ignore */ }
+            }
+
+            // Clear saved player data (requires explicit button press)
+            window.clearPlayerData = () => {
+                if (!confirm('Erase saved player names and team names? This will reset to defaults.')) return;
+                try { localStorage.removeItem('spyDealerPlayers'); } catch (e) {}
+                // reset in-memory defaults
+                teams.forEach(t => {
+                    for (let i = 1; i <= 6; i++) playerNames[t][i] = `${t}${i}`;
+                    if (playerNames[t]._teamName) delete playerNames[t]._teamName;
+                });
+                // update modal inputs if visible
+                document.querySelectorAll('.team-name-input').forEach(i => i.value = '');
+                document.querySelectorAll('input.player-input[data-team][data-player]').forEach(inp => {
+                    const team = inp.getAttribute('data-team');
+                    const player = inp.getAttribute('data-player');
+                    inp.value = playerNames[team][player] || '';
+                });
+                alert('Player names cleared.');
+            };
+
+            window.openHistoryModal = () => {
+                const m = document.getElementById('historyModal');
+                if (m) m.classList.add('visible');
+                populateHistoryList();
+            };
+
+            window.closeHistoryModal = () => {
+                const m = document.getElementById('historyModal');
+                if (m) m.classList.remove('visible');
+            };
+
+            function populateHistoryList() {
+                const container = document.getElementById('historyList');
+                if (!container) return;
+                container.innerHTML = '';
+                let hist = [];
+                try { hist = JSON.parse(localStorage.getItem('spyDealerHistory') || '[]'); } catch (e) { hist = []; }
+                if (!hist || !hist.length) {
+                    container.innerHTML = '<div style="color:#00d4ff; opacity:0.8; text-align:center; padding:8px;">No rounds yet</div>';
+                    return;
+                }
+                // newest first
+                hist.slice().reverse().forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'player-input';
+                    item.style.cursor = 'pointer';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.style.padding = '8px';
+                    item.style.borderRadius = '6px';
+                    item.style.background = 'transparent';
+                    item.style.border = '1px solid rgba(0,212,255,0.04)';
+                    const left = document.createElement('div');
+                    left.innerHTML = '<strong>' + new Date(r.startedAt).toLocaleString() + '</strong><div style="font-size:0.9rem;color:#00d4ff;opacity:0.85">' + (r.status || '') + '</div>';
+                    const right = document.createElement('div');
+                    const viewBtn = document.createElement('button');
+                    viewBtn.className = 'restart-button';
+                    viewBtn.textContent = 'VIEW';
+                    viewBtn.style.padding = '6px 10px';
+                    viewBtn.style.fontSize = '0.8rem';
+                    viewBtn.addEventListener('click', (ev) => { ev.stopPropagation(); showHistoryRound(r); closeHistoryModal(); });
+                    right.appendChild(viewBtn);
+                    item.appendChild(left);
+                    item.appendChild(right);
+                    item.addEventListener('click', () => { showHistoryRound(r); closeHistoryModal(); });
+                    container.appendChild(item);
+                });
+            }
+
+            function showHistoryRound(r) {
+                if (!r || !r.impostors) return;
+                const lines = r.impostors.map(i => `${getTeamDisplay(i.team)} — ${i.name}`);
+                displayContent.textContent = `IMPOSTORS:\n${lines.join('\n')}`;
+                displayContent.className = 'display-revealed spy';
+                display.classList.add('locked', 'spy');
+                // ensure it's visible and not blocking the buttons
+                if (display) { display.style.pointerEvents = 'none'; display.style.zIndex = '998'; }
+                impostorsRevealed = true;
+            }
+
+            function clearHistory() {
+                try { localStorage.removeItem('spyDealerHistory'); } catch (e) {}
+                populateHistoryList();
+            }
+
+            // Initialize and restore persisted last-game info
+            window.addEventListener('load', () => {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('spyDealerLastGame') || 'null');
+                    if (saved) {
+                        lastGameData = saved;
+                        impostors = saved.impostors || [];
+                    }
+                } catch (e) {
+                    // ignore parse errors
+                }
+
+                // restore any saved player/team names so modal and UI show them
+                try { restorePlayerNamesFromStorage(); } catch (e) { /* ignore */ }
+
+                playerIdDisplay.textContent = '';
+                if (lastGameData && lastGameData.status === 'in-progress') {
+                    // restore in-progress round state
+                    spies = (lastGameData.spies) ? Object.assign({}, lastGameData.spies) : spies;
+                    impostors = lastGameData.impostors || impostors;
+                    currentWord = lastGameData.word || currentWord;
+                    currentTeamIndex = typeof lastGameData.currentTeamIndex !== 'undefined' ? lastGameData.currentTeamIndex : 0;
+                    currentPlayerInTeam = typeof lastGameData.currentPlayerInTeam !== 'undefined' ? lastGameData.currentPlayerInTeam : 1;
+                    gameStarted = true;
+                    displayContent.textContent = 'ROUND IN PROGRESS';
+                    // update UI to the current player
+                    showCurrentPlayer();
+                } else {
+                    displayContent.textContent = 'PRESS START ROUND';
+                }
+
+                // if the last saved round ended, show reveal control so users can reveal after reload
+                const revealBtn = document.getElementById('revealImpostorsBtn');
+                if (revealBtn && lastGameData && lastGameData.status === 'ended') {
+                    revealBtn.classList.add('visible');
+                }
+
+                if (display) display.onclick = toggleReveal; // single handler
+            });
+        })();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f0c08da97369d21',t:'MTc3NjkzODU2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

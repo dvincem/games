@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHARADES: Complex Objects</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+    
+    * { box-sizing: border-box; }
+
+    body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+
+    .randomizer-wrapper {
+      background-size: cover;
+      background-position: center;
+      transition: background-image 0.8s ease-in-out;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .randomizer-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      pointer-events: none;
+    }
+
+    .card-container {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      padding: 48px;
+      max-width: 640px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .header {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    .title-text {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 40px;
+      letter-spacing: -0.05em;
+    }
+
+    .prompt-display {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 40px;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .prompt-text { font-size: 2rem; color: #e2e8f0; font-weight: 600; }
+    .prompt-detail { font-size: 1.125rem; color: #94a3b8; }
+
+    .generate-btn {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 40px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); }
+    .generate-btn:active { transform: translateY(0); }
+
+    #start-btn {
+      background: linear-gradient(135deg, #f43f5e, #e11d48);
+    }
+  </style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body>
+  <a href="index.html" class="absolute top-6 left-6 z-[100] p-3 rounded-full bg-slate-800 border border-slate-600 hover:border-sky-500 hover:bg-slate-700 transition duration-300">
+     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+   </a>
+  <div class="randomizer-wrapper">
+   <div class="card-container">
+    <div class="header">
+      <h1 class="title-text" id="app-title">CHARADES: <br> Complex Objects</h1>
+    </div>
+    <div class="prompt-display" id="prompt-display" style="display: none;">
+     <div class="prompt-text" id="prompt-title">
+      Jeepney
+     </div>
+     <div class="prompt-detail" id="prompt-description">
+      Driver, conductor, and 3 passengers passing coins.
+     </div>
+    </div>
+    <div class="flex justify-center gap-4">
+      <button class="generate-btn" id="start-btn" style="display: block;">START</button>
+      <button class="generate-btn" id="generate-btn" style="display: none;">GENERATE</button>
+    </div>
+   </div>
+  </div>
+  <script>
+    const prompts = [
+      { num: 1, title: "Jeepney", desc: "Driver, conductor, and 3 passengers passing coins." },
+      { num: 2, title: "Airplane", desc: "The pilot, two wings, the tail, and a flight attendant." },
+      { num: 3, title: "Washing Machine", desc: "The spinning drum, the door, and vibrating clothes." },
+      { num: 4, title: "Electric Fan", desc: "The motor, the oscillating head, and the blades." },
+      { num: 5, title: "Elevator", desc: "The sliding doors, the buttons, and people squeezing in." },
+      { num: 6, title: "Bicycle", desc: "The pedals, the chain, the wheels, and the bell." },
+      { num: 7, title: "ATM Machine", desc: "The card slot, the screen, and the cash dispenser." },
+      { num: 8, title: "Motorcycle", desc: "Wheels spinning, handlebars, and the exhaust pipe." },
+      { num: 9, title: "Camera (DSLR)", desc: "The lens zooming, the shutter button, and the flash." },
+      { num: 10, title: "Coffee Maker", desc: "The dripping water, the steam, and the pouring pot." },
+      { num: 11, title: "Microwave", desc: "The rotating tray, the timer, and the loud 'Beep.'" },
+      { num: 12, title: "Gas Pump", desc: "The nozzle, the fuel meter, and the tank opening." },
+      { num: 13, title: "Automatic Sliding Door", desc: "The sensors and the two doors sliding open." },
+      { num: 14, title: "Water Dispenser", desc: "The bottle gulping, the hot/cold taps, and the cup." },
+      { num: 15, title: "Toaster", desc: "Two pieces of bread 'popping' up when finished." },
+      { num: 16, title: "Umbrella", desc: "The handle, the ribs expanding, and the fabric opening." },
+      { num: 17, title: "Treadmill", desc: "The moving belt, the handles, and a person running." },
+      { num: 18, title: "Blender", desc: "The base, the blades spinning fast, and the lid." },
+      { num: 19, title: "Clock Tower", desc: "The gears, the pendulum, and the 'Cuckoo' bird." },
+      { num: 20, title: "Vending Machine", desc: "Buttons being pressed, item falling, and getting stuck." },
+      { num: 21, title: "Fireworks", desc: "The launch whistle, the explosion, and the falling sparks." },
+      { num: 22, title: "Roller Coaster", desc: "The cart climbing the track and the big drop." },
+      { num: 23, title: "Piano", desc: "The keys being pressed and the hammers hitting strings." },
+      { num: 24, title: "Carousel", desc: "The poles going up and down and the horses 'galloping.'" },
+      { num: 25, title: "Popcorn Machine", desc: "The heat, the kernels 'popping,' and overflowing." },
+      { num: 26, title: "Barber's Chair", desc: "The foot pump, the chair rising, and the reclining back." },
+      { num: 27, title: "Drum Set", desc: "The bass drum pedal, the snare, and the cymbals." },
+      { num: 28, title: "Helicopter", desc: "The main rotor, the tail rotor, and the skids." },
+      { num: 29, title: "Chainsaw", desc: "The pull-cord start, the vibrating blade, and the teeth." },
+      { num: 30, title: "Windmill", desc: "The giant sails turning slowly in the wind." },
+      { num: 31, title: "Solar System", desc: "The Sun in the center and 4 planets orbiting." },
+      { num: 32, title: "Record Player", desc: "The spinning vinyl and the needle arm dropping." },
+      { num: 33, title: "Arcade Claw Machine", desc: "The joystick, the claw dropping, and grabbing a toy." },
+      { num: 34, title: "Water Fountain", desc: "The water spraying up and falling back down." },
+      { num: 35, title: "Typewriter", desc: "The keys hitting paper and the 'Ding' at the end of the line." },
+      { num: 36, title: "Handheld Game Console", desc: "The buttons, the screen, and the game character." },
+      { num: 37, title: "Construction Crane", desc: "The heavy base, the rotating arm, and the hook." },
+      { num: 38, title: "Photocopy Machine", desc: "The scanning light moving and paper feeding out." },
+      { num: 39, title: "Jack-in-the-Box", desc: "The handle turning and the surprise 'Pop!'" },
+      { num: 40, title: "Drawbridge", desc: "The two sides rising up for a boat to pass under." },
+      { num: 41, title: "Spaceship Launch", desc: "The countdown, the thrusters, and the takeoff." },
+      { num: 42, title: "Automatic Car Wash", desc: "The giant spinning brushes and the sprayers." },
+      { num: 43, title: "Escalator", desc: "The steps moving up and the handrails." },
+      { num: 44, title: "Bowling Alley Pinsetter", desc: "The pins being knocked down and reset." },
+      { num: 45, title: "Printing Press", desc: "The rollers spinning and newspapers flying through." },
+      { num: 46, title: "Grandfather Clock", desc: "The weights, the slow pendulum, and the chimes." },
+      { num: 47, title: "Accordion", desc: "The bellows squeezing in and out and the keyboard." },
+      { num: 48, title: "Sewing Machine", desc: "The needle pumping, the thread, and the fabric." },
+      { num: 49, title: "Submarine", desc: "The periscope rotating and the hatch sealing shut." },
+      { num: 50, title: "Satellite Dish", desc: "The dish rotating and signal waves being sent." },
+      { num: 51, title: "Telescope", desc: "The tripod, the lens extending, and the eyepiece." },
+      { num: 52, title: "Pinball Machine", desc: "The flippers, the bumpers, and the rolling ball." },
+      { num: 53, title: "Steam Engine Train", desc: "The pistons, the wheels, and the smokestack." },
+      { num: 54, title: "Microscope", desc: "The stage, the slides, and the focus knobs." }
+    ];
+
+    const defaultConfig = {
+      app_title: "CHARADES: Complex Objects",
+      button_text: "GENERATE"
+    };
+
+    let config = { ...defaultConfig };
+
+    function getRandomPrompt() {
+      return prompts[Math.floor(Math.random() * prompts.length)];
+    }
+
+    function displayPrompt(prompt) {
+      document.getElementById('prompt-title').textContent = prompt.title;
+      document.getElementById('prompt-description').textContent = prompt.desc;
+      const imageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(prompt.title)}`;
+      document.querySelector('.randomizer-wrapper').style.backgroundImage = `url('${imageUrl}')`;
+    }
+
+    document.getElementById('generate-btn').addEventListener('click', () => {
+      displayPrompt(getRandomPrompt());
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('prompt-display').style.display = 'flex';
+      document.getElementById('generate-btn').style.display = 'block';
+      displayPrompt(getRandomPrompt());
+    });
+
+    // Initialize with first prompt
+    displayPrompt(prompts[0]);
+
+    // Element SDK initialization
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (newConfig) => {
+        config = newConfig;
+        document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
+        document.getElementById('generate-btn').textContent = config.button_text || defaultConfig.button_text;
+      },
+      mapToCapabilities: (cfg) => ({
+        recolorables: [],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      }),
+      mapToEditPanelValues: (cfg) => new Map([
+        ["app_title", cfg.app_title || defaultConfig.app_title],
+        ["button_text", cfg.button_text || defaultConfig.button_text]
+      ])
+    });
+  </script>
+ </body>
+</html>

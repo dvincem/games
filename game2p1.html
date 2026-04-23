@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100%; margin: 0; background: #0f172a; color: #fff; overflow: hidden; }
+    #app { 
+      background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+      transition: background-image 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.95) 100%);
+      z-index: 5;
+    }
+    .neon-text {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(56, 189, 248, 0.1);
+      padding: 40px 60px;
+      border-radius: 24px;
+    }
+    .gen-btn {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 100%);
+      border: none;
+      color: white;
+      box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 800;
+    }
+    .gen-btn:hover { 
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 25px -5px rgba(14, 165, 233, 0.4);
+    }
+    .title-reveal { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .subtitle {
+        font-size: 0.9rem;
+        color: #00d4ff;
+        margin-top: 0;
+        font-style: italic;
+        opacity: 0.8;
+    }
+  </style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="w-full h-full flex flex-col items-center justify-center gap-8 p-6 relative overflow-hidden">
+   <a href="index.html" class="absolute top-6 left-6 z-50 p-3 rounded-full bg-slate-800 border border-slate-600 hover:border-sky-500 hover:bg-slate-700 transition duration-300">
+     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+   </a>
+   <div class="overlay"></div>
+   <canvas id="bgCanvas" class="absolute inset-0 w-full h-full"></canvas>
+   <div class="header mb-6 relative z-10 text-center">
+    <h1 style="font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 56px; color: #fff; text-shadow: 0 0 20px #00d4ff, 0 0 40px #00d4ff; margin: 0; letter-spacing: 6px;">CINE-ACT</h1>
+    <p style="font-family: 'Orbitron', sans-serif; font-weight: 400; font-size: 16px; color: #00d4ff; text-transform: uppercase; margin: 10px 0 0 0; letter-spacing: 5px;">M O V I E - C H A R A D E S - G A M E</p>
+   </div>
+   <div id="result" class="neon-text text-center min-w-[60%] max-w-[800px] flex items-center justify-center px-8 relative z-10" style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 24px; line-height: 1.6;">
+    Press the button to initiate sequence.
+   </div>
+   <button id="genBtn" class="gen-btn text-xl px-12 py-5 rounded-full relative z-10" onclick="generate()">GENERATE</button>
+  </div>
+  <script>
+    const movieData = [
+      // EASY (18 movies)
+      { title: "Titanic: 1 ship bow, 2 flying Jack & Rose, 2 ocean waves", gradient: "linear-gradient(135deg, #1a3a4a 0%, #87ceeb 50%, #333333 100%)" },
+      { title: "Spider-Man: The 3 Spideys pointing + 2 shooting webs", gradient: "linear-gradient(135deg, #cc0000 0%, #0052cc 50%, #ffeb3b 100%)" },
+      { title: "The Lion King: 1 Rafiki lifting baby Simba, 4 kneeling animals", gradient: "linear-gradient(135deg, #8b4423 0%, #ffeb3b 50%, #ff6600 100%)" },
+      { title: "Zombie Movie: 1 survivor fighting 4 twitching, moaning zombies", gradient: "linear-gradient(135deg, #2d5016 0%, #cc0000 50%, #1a1a1a 100%)" },
+      { title: "The Avengers: 5 signature hero poses", gradient: "linear-gradient(135deg, #0052cc 0%, #cc0000 50%, #ffeb3b 100%)" },
+      { title: "Star Wars: 2 lightsaber duelists, 1 Force Choker, 2 victims", gradient: "linear-gradient(135deg, #000000 0%, #ffeb3b 50%, #cc0000 100%)" },
+      { title: "Harry Potter: 5 on brooms/wands performing group spell", gradient: "linear-gradient(135deg, #8b0000 0%, #ffd700 50%, #1a1a1a 100%)" },
+      { title: "Jurassic Park: 1 T-Rex roaring, 4 humans freezing in terror", gradient: "linear-gradient(135deg, #2d5016 0%, #8b4423 50%, #d4a574 100%)" },
+      { title: "Miss Universe: 1 winner crowned, 4 clapping runners-up", gradient: "linear-gradient(135deg, #8b0000 0%, #ffd700 50%, #ff69b4 100%)" },
+      { title: "The Matrix: 1 slow-mo bullet dodge lean, 4 firing in slow-mo", gradient: "linear-gradient(135deg, #000000 0%, #00ff00 50%, #1a1a1a 100%)" },
+      { title: "Frozen: 1 Elsa shooting ice, 1 Olaf, 3 as snowstorm", gradient: "linear-gradient(135deg, #00ccff 0%, #87ceeb 50%, #e0f2ff 100%)" },
+      { title: "Home Alone: Hands-on-face scream, 4 bandits on traps", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #2d5016 100%)" },
+      { title: "Toy Story: Everyone playing, flopping when Andy's coming", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #87ceeb 100%)" },
+      { title: "Superman: 1 flying with cape held by others", gradient: "linear-gradient(135deg, #0052cc 0%, #1e88e5 50%, #ffeb3b 100%)" },
+      { title: "Pirates of the Caribbean: 1 Jack Sparrow, 4 sword fighting", gradient: "linear-gradient(135deg, #8b4513 0%, #1a3a4a 50%, #ffd700 100%)" },
+      { title: "Shrek: Shrek bursting outhouse, Donkey talking non-stop", gradient: "linear-gradient(135deg, #2d5016 0%, #32cd32 50%, #ffd700 100%)" },
+      { title: "Batman: 1 brooding Batman, 4 forming Bat-Signal", gradient: "linear-gradient(135deg, #1a1a1a 0%, #333333 50%, #ffeb3b 100%)" },
+      { title: "Barbie: Hi Barbie wave, pink dance party", gradient: "linear-gradient(135deg, #ff69b4 0%, #ff1493 50%, #ffb6c1 100%)" },
+      // MEDIUM (18 movies)
+      { title: "Men in Black: Agents putting on sunglasses, flashing pen", gradient: "linear-gradient(135deg, #1a1a1a 0%, #333333 50%, #ffeb3b 100%)" },
+      { title: "Mission: Impossible: 1 hanging from ropes, 4 holding", gradient: "linear-gradient(135deg, #0052cc 0%, #1a1a1a 50%, #cc0000 100%)" },
+      { title: "Squid Game: Red Light, Green Light doll, 4 freezing", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #2d5016 100%)" },
+      { title: "Ghostbusters: 3 vacuuming, 2 acting as ghost", gradient: "linear-gradient(135deg, #1a1a1a 0%, #00ff00 50%, #ffeb3b 100%)" },
+      { title: "Fast & Furious: 5 in row driving and shifting gears", gradient: "linear-gradient(135deg, #333333 0%, #cc0000 50%, #ffeb3b 100%)" },
+      { title: "Jollibee: Mascot dancing and serving Chickenjoy", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #ff69b4 100%)" },
+      { title: "Inside Out: 5 as Anger, Sadness, Joy, Fear, Disgust", gradient: "linear-gradient(135deg, #ff6600 0%, #0052cc 50%, #32cd32 100%)" },
+      { title: "High School Musical: Synchronized dance together", gradient: "linear-gradient(135deg, #8b0000 0%, #ffeb3b 50%, #0052cc 100%)" },
+      { title: "Alice in Wonderland: Mad Hatter's Tea Party, shifting seats", gradient: "linear-gradient(135deg, #8b0000 0%, #ffeb3b 50%, #87ceeb 100%)" },
+      { title: "E.T.: 1 E.T. in basket, 4 flying the bicycle", gradient: "linear-gradient(135deg, #1a1a1a 0%, #ffeb3b 50%, #87ceeb 100%)" },
+      { title: "Rocky: 1 boxing air, 4 cheering crowd", gradient: "linear-gradient(135deg, #8b0000 0%, #ffeb3b 50%, #1a1a1a 100%)" },
+      { title: "Wednesday: Viral Addams Dance, 1 as Thing the hand", gradient: "linear-gradient(135deg, #1a1a1a 0%, #333333 50%, #ffeb3b 100%)" },
+      { title: "One Piece: 1 Luffy stretching arms, 4 pirate poses", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #0052cc 100%)" },
+      { title: "Minecraft: Everyone blocky, mining, and building", gradient: "linear-gradient(135deg, #2d5016 0%, #8b4423 50%, #ffeb3b 100%)" },
+      { title: "The Last of Us: Survivors sneaking, 2 Clickers twitching", gradient: "linear-gradient(135deg, #2d5016 0%, #8b4423 50%, #cc0000 100%)" },
+      { title: "Singin' in the Rain: 1 umbrella dancer, 4 splashing", gradient: "linear-gradient(135deg, #1a1a1a 0%, #87ceeb 50%, #ffeb3b 100%)" },
+      { title: "The Wizard of Oz: Skipping down Yellow Brick Road", gradient: "linear-gradient(135deg, #ffd700 0%, #8b4423 50%, #2d5016 100%)" },
+      { title: "Transformers: 5 robots folding down into car", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #1a1a1a 100%)" },
+      // HARD (18 movies)
+      { title: "300: Locking invisible shields and spears + Spartan Kick", gradient: "linear-gradient(135deg, #8b0000 0%, #ffd700 50%, #1a1a1a 100%)" },
+      { title: "Bird Box: 5 blindfolded people rowing boat in a line", gradient: "linear-gradient(135deg, #1a1a1a 0%, #333333 50%, #87ceeb 100%)" },
+      { title: "Heneral Luna: Intense shouting dinner table argument", gradient: "linear-gradient(135deg, #8b0000 0%, #cc0000 50%, #ffeb3b 100%)" },
+      { title: "Inception: 5 leaning/falling as gravity shifts", gradient: "linear-gradient(135deg, #0052cc 0%, #333333 50%, #00d4ff 100%)" },
+      { title: "The Shining: Here's Johnny! door scene + 4 screaming", gradient: "linear-gradient(135deg, #1a1a1a 0%, #cc0000 50%, #ffeb3b 100%)" },
+      { title: "Parasite: Jessica Jingle + people hiding under table", gradient: "linear-gradient(135deg, #333333 0%, #ffeb3b 50%, #0052cc 100%)" },
+      { title: "Joker: 1 doing Stairs Dance, 4 as dirty city", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #1a1a1a 100%)" },
+      { title: "Up: 1 as house, 4 as balloons pulling it up", gradient: "linear-gradient(135deg, #ff69b4 0%, #ffeb3b 50%, #87ceeb 100%)" },
+      { title: "Cast Away: 1 rowing raft and screaming for Wilson", gradient: "linear-gradient(135deg, #1a3a4a 0%, #d4a574 50%, #87ceeb 100%)" },
+      { title: "Grease: Hand Jive dance or final carnival scene", gradient: "linear-gradient(135deg, #ff69b4 0%, #ffeb3b 50%, #0052cc 100%)" },
+      { title: "Money Heist: 5 in masks taking audience hostage", gradient: "linear-gradient(135deg, #cc0000 0%, #333333 50%, #ffeb3b 100%)" },
+      { title: "Deadpool & Wolverine: Bye Bye Bye dance + duo fight", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #0052cc 100%)" },
+      { title: "Avatar: 5 connecting hair to dragons and flying", gradient: "linear-gradient(135deg, #1a472a 0%, #00a86b 50%, #87ceeb 100%)" },
+      { title: "Top Gun Maverick: Beach volleyball + jet flying", gradient: "linear-gradient(135deg, #87ceeb 0%, #ffeb3b 50%, #cc0000 100%)" },
+      { title: "La La Land: Sunset Bench Dance with synchronized moves", gradient: "linear-gradient(135deg, #ff6600 0%, #ffeb3b 50%, #87ceeb 100%)" },
+      { title: "Everything Everywhere: Fighting with Hot Dog Fingers", gradient: "linear-gradient(135deg, #cc0000 0%, #ffeb3b 50%, #ff69b4 100%)" },
+      { title: "Mulan: I'll Make a Man out of You training montage", gradient: "linear-gradient(135deg, #cc0000 0%, #ffd700 50%, #ffeb3b 100%)" },
+      { title: "Gladiator: Are you not entertained? + sword battle", gradient: "linear-gradient(135deg, #8b0000 0%, #cc0000 50%, #ffd700 100%)" }
+    ];
+
+    
+    const drawFunctions = {
+      "Superman": drawStars,
+      "Avatar": drawParticles,
+      "Tron": drawGridLines,
+      "Barbie": drawHearts,
+      "Dune": drawSand,
+      "Matrix": drawMatrix,
+      "Star Wars": drawLightSabers,
+      "Frozen": drawSnowflakes,
+      "Lion King": drawSunrise
+    };
+
+    function generateBackgroundGraphics(title, canvas) {
+      const ctx = canvas.getContext('2d', { alpha: false });
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      
+      const theme = getThemeFromTitle(title);
+      
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, theme.color1);
+      gradient.addColorStop(0.5, theme.color2);
+      gradient.addColorStop(1, theme.color3);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const drawFn = Object.keys(drawFunctions).find(key => title.includes(key));
+      if (drawFn) {
+        drawFunctions[drawFn](ctx, canvas, theme);
+      } else if (title.includes("Alien") || title.includes("Sci-Fi")) {
+        drawAbstractWaves(ctx, canvas, theme);
+      } else {
+        drawRandomPatterns(ctx, canvas, theme);
+      }
+    }
+
+    function getThemeFromTitle(title) {
+      const themes = {
+        "Superman": { color1: "#0052cc", color2: "#1e88e5", color3: "#ffeb3b", accent: "#ffeb3b" },
+        "Avatar": { color1: "#1a472a", color2: "#00a86b", color3: "#ffa500", accent: "#00a86b" },
+        "Tron": { color1: "#001a33", color2: "#00d4ff", color3: "#ff00ff", accent: "#00d4ff" },
+        "Barbie": { color1: "#ff69b4", color2: "#ff1493", color3: "#ffb6c1", accent: "#ff1493" },
+        "Dune": { color1: "#8b6914", color2: "#ffd700", color3: "#d4a574", accent: "#ffd700" },
+        "Matrix": { color1: "#000000", color2: "#00ff00", color3: "#1a1a1a", accent: "#00ff00" },
+        "Star Wars": { color1: "#000000", color2: "#ffeb3b", color3: "#cc0000", accent: "#ffeb3b" },
+        "Frozen": { color1: "#00ccff", color2: "#87ceeb", color3: "#e0f2ff", accent: "#00ccff" },
+        "Lion King": { color1: "#8b4423", color2: "#ffeb3b", color3: "#ff6600", accent: "#ffeb3b" }
+      };
+      
+      for (const key in themes) {
+        if (title.includes(key)) return themes[key];
+      }
+      return { color1: "#1a1a2e", color2: "#0f3460", color3: "#16c784", accent: "#00d4ff" };
+    }
+
+    function drawStars(ctx, canvas, theme) {
+      ctx.fillStyle = theme.accent;
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const size = Math.random() * 3;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+
+    function drawParticles(ctx, canvas, theme) {
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const r = Math.random() * 20 + 5;
+        ctx.fillStyle = `rgba(0, 168, 107, ${Math.random() * 0.5 + 0.2})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawGridLines(ctx, canvas, theme) {
+      ctx.strokeStyle = `rgba(0, 212, 255, 0.3)`;
+      ctx.lineWidth = 2;
+      const spacing = 40;
+      for (let x = 0; x < canvas.width; x += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    function drawHearts(ctx, canvas, theme) {
+      ctx.fillStyle = `rgba(255, 20, 147, 0.4)`;
+      for (let i = 0; i < 15; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const size = Math.random() * 30 + 20;
+        drawHeart(ctx, x, y, size);
+      }
+    }
+
+    function drawHeart(ctx, x, y, size) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + size / 4);
+      ctx.bezierCurveTo(x - size / 2, y - size / 4, x - size / 2, y - size / 2, x - size / 4, y - size / 2);
+      ctx.bezierCurveTo(x, y - size * 0.8, x + size / 4, y - size / 2, x + size / 2, y - size / 2);
+      ctx.bezierCurveTo(x + size / 2, y - size / 4, x, y + size / 4, x, y + size / 4);
+      ctx.bezierCurveTo(x, y + size / 4, x, y + size / 2, x - size / 4, y + size / 2);
+      ctx.bezierCurveTo(x - size / 3, y + size / 2, x - size / 2, y + size / 3, x - size / 2, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawSand(ctx, canvas, theme) {
+      for (let i = 0; i < 200; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const size = Math.random() * 2;
+        ctx.fillStyle = `rgba(212, 165, 116, ${Math.random() * 0.5})`;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+
+    function drawMatrix(ctx, canvas, theme) {
+      ctx.fillStyle = `rgba(0, 255, 0, 0.1)`;
+      ctx.font = "20px Orbitron";
+      const chars = "01アイウエオカキクケコサシスセソ";
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y);
+      }
+    }
+
+    function drawLightSabers(ctx, canvas, theme) {
+      for (let i = 0; i < 5; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const angle = Math.random() * Math.PI * 2;
+        ctx.strokeStyle = i % 2 === 0 ? "#ffeb3b" : "#cc0000";
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(angle) * 80, y + Math.sin(angle) * 80);
+        ctx.stroke();
+      }
+    }
+
+    function drawSnowflakes(ctx, canvas, theme) {
+      ctx.strokeStyle = `rgba(0, 204, 255, 0.6)`;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 30; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        drawSnowflake(ctx, x, y, Math.random() * 15 + 10);
+      }
+    }
+
+    function drawSnowflake(ctx, x, y, size) {
+      for (let i = 0; i < 6; i++) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate((i * Math.PI) / 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, size);
+        ctx.stroke();
+        for (let j = 1; j < 3; j++) {
+          ctx.beginPath();
+          ctx.moveTo(0, (size / 3) * j);
+          ctx.lineTo((size / 3) * (0.5 * j), (size / 3) * j + (size / 3) * 0.5);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    function drawSunrise(ctx, canvas, theme) {
+      const sunY = canvas.height * 0.6;
+      const gradient = ctx.createRadialGradient(canvas.width / 2, sunY, 0, canvas.width / 2, sunY, 150);
+      gradient.addColorStop(0, `rgba(255, 235, 59, 0.8)`);
+      gradient.addColorStop(1, `rgba(255, 102, 0, 0.3)`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, sunY, 150, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawAbstractWaves(ctx, canvas, theme) {
+      ctx.strokeStyle = `rgba(0, 212, 255, 0.3)`;
+      ctx.lineWidth = 3;
+      for (let wave = 0; wave < 5; wave++) {
+        ctx.beginPath();
+        for (let x = 0; x <= canvas.width; x += 10) {
+          const y = canvas.height / 2 + Math.sin((x + wave * 50) * 0.01) * 50 + wave * 30;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function drawRandomPatterns(ctx, canvas, theme) {
+      for (let i = 0; i < 80; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const size = Math.random() * 4;
+        ctx.fillStyle = `rgba(0, 212, 255, ${Math.random() * 0.4})`;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+
+    const moviePosters = {
+      "Titanic": "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
+      "Spider-Man": "https://image.tmdb.org/t/p/w500/gh4cZbhZxyTbgxQPxD0dOudNPTn.jpg",
+      "The Lion King": "https://image.tmdb.org/t/p/w500/wjm5Sg65P16LwYq0H93G9Z5P5hA.jpg",
+      "The Avengers": "https://image.tmdb.org/t/p/w500/RYMX2wcKABCl24VpcY0l3S2STh.jpg",
+      "Star Wars": "https://image.tmdb.org/t/p/w500/6Fxcw23b4k7p4s1x96K7x7Xp8q5.jpg",
+      "Harry Potter": "https://image.tmdb.org/t/p/w500/fTqH34r856P3CjX28nQ05yv6sPq.jpg",
+      "Jurassic Park": "https://image.tmdb.org/t/p/w500/oU7O9E3xYkFwS484y3E8k7uD9N.jpg",
+      "The Matrix": "https://image.tmdb.org/t/p/w500/f89U3BY5ySgB43a8pY8wG4k1f8.jpg",
+      "Frozen": "https://image.tmdb.org/t/p/w500/kgxLW6gR2aXpB9g2o7P5S7V4zG.jpg",
+      "Home Alone": "https://image.tmdb.org/t/p/w500/3oPz3V1z1m7tK7W9g7d5U6P8P9x.jpg",
+      "Toy Story": "https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijWchTSAb3sIMDJ5b.jpg",
+      "Superman": "https://image.tmdb.org/t/p/w500/1pP9u1yRz98s9V2K7s6tQ9y6wPz.jpg",
+      "Pirates of the Caribbean": "https://image.tmdb.org/t/p/w500/j6yT1W4N3n1o7x9d9P5P7v0x2O8.jpg",
+      "Shrek": "https://image.tmdb.org/t/p/w500/51sVwO05l1Kz5l5P8L5x5L8x5L8.jpg",
+      "Batman": "https://image.tmdb.org/t/p/w500/1hQZz51P6yQv6P5w7P6yQv6P5w7.jpg",
+      "Barbie": "https://image.tmdb.org/t/p/w500/iuFNMS4UoU3dK7W9g7d5U6P8P9x.jpg",
+      "Men in Black": "https://image.tmdb.org/t/p/w500/m5z7d5U6P8P9x3oPz3V1z1m7tK7.jpg",
+      "Mission: Impossible": "https://image.tmdb.org/t/p/w500/5k7d5U6P8P9x3oPz3V1z1m7tK7W.jpg",
+      "Inception": "https://image.tmdb.org/t/p/w500/edvUpQYQG26867lPz5L8x5L8x5L.jpg"
+    };
+
+    let shuffledIndices = [];
+
+    function generate() {
+      if (shuffledIndices.length === 0) {
+        shuffledIndices = [...Array(movieData.length).keys()].sort(() => Math.random() - 0.5);
+      }
+      const idx = shuffledIndices.pop();
+      const el = document.getElementById('result');
+      const canvas = document.getElementById('bgCanvas');
+      
+      const fullTitle = movieData[idx].title;
+      const [title, scene] = fullTitle.split(':');
+      
+      el.innerHTML = `
+        <div style="font-weight: 900; font-size: 24px; color: #fff; margin-bottom: 8px; text-transform: uppercase; word-wrap: break-word;">${title}</div>
+        <div style="font-weight: 400; font-size: 16px; color: #00d4ff; line-height: 1.3; opacity: 0.9; word-wrap: break-word;">${scene || ''}</div>
+      `;
+      
+      const posterKey = Object.keys(moviePosters).find(key => title.includes(key));
+      if (posterKey) {
+        document.getElementById('app').style.backgroundImage = `url(${moviePosters[posterKey]})`;
+        document.getElementById('app').style.backgroundSize = "cover";
+        document.getElementById('app').style.backgroundPosition = "center";
+        canvas.style.opacity = "0.2";
+      } else {
+        document.getElementById('app').style.backgroundImage = "none";
+        canvas.style.opacity = "0.6";
+      }
+      
+      generateBackgroundGraphics(title, canvas);
+      el.classList.remove('title-reveal');
+      void el.offsetWidth;
+      el.classList.add('title-reveal');
+    }
+
+    const defaultConfig = { button_text: "GENERATE", primary_color: "#00d4ff", font_family: "Orbitron", font_size: 28 };
+
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => {
+        const btn = document.getElementById('genBtn');
+        const result = document.getElementById('result');
+        btn.textContent = config.button_text || defaultConfig.button_text;
+        const c = config.primary_color || defaultConfig.primary_color;
+        result.style.color = c;
+        result.style.textShadow = `0 0 8px ${c}, 0 0 20px ${c}88, 0 0 40px ${c}44`;
+        btn.style.background = `linear-gradient(135deg, ${c}, #0066ff)`;
+        btn.style.boxShadow = `0 0 20px ${c}66, 0 4px 15px rgba(0,0,0,0.3)`;
+        const font = config.font_family || defaultConfig.font_family;
+        result.style.fontFamily = `${font}, sans-serif`;
+        btn.style.fontFamily = `${font}, sans-serif`;
+        const size = config.font_size || defaultConfig.font_size;
+        result.style.fontSize = `${size}px`;
+        btn.style.fontSize = `${size * 0.75}px`;
+      },
+      mapToCapabilities: (config) => ({
+        recolorables: [{
+          get: () => config.primary_color || defaultConfig.primary_color,
+          set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); }
+        }],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+        }
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ["button_text", config.button_text || defaultConfig.button_text]
+      ])
+    });
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f0c0fcee3b1924e',t:'MTc3NjkzODg1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
