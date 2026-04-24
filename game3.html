@@ -623,32 +623,9 @@
       <div class="modal-title">
         Enter Player Names
       </div>
-      <div class="teams-container">
-      <div class="team-section">
-       <div class="team-label">
-                <input type="text" class="player-input team-name-input" data-team="A" placeholder="Team A">
-       </div>
-       <div class="players-list">
-        <input type="text" class="player-input" placeholder="Player 1" data-team="A" data-player="1"> <input type="text" class="player-input" placeholder="Player 2" data-team="A" data-player="2"> <input type="text" class="player-input" placeholder="Player 3" data-team="A" data-player="3"> <input type="text" class="player-input" placeholder="Player 4" data-team="A" data-player="4"> <input type="text" class="player-input" placeholder="Player 5" data-team="A" data-player="5"> <input type="text" class="player-input" placeholder="Player 6" data-team="A" data-player="6">
-       </div>
+      <div class="teams-container" id="teamsContainer">
+      <!-- Teams are rendered dynamically by JS -->
       </div>
-      <div class="team-section">
-       <div class="team-label">
-                <input type="text" class="player-input team-name-input" data-team="B" placeholder="Team B">
-       </div>
-       <div class="players-list">
-        <input type="text" class="player-input" placeholder="Player 1" data-team="B" data-player="1"> <input type="text" class="player-input" placeholder="Player 2" data-team="B" data-player="2"> <input type="text" class="player-input" placeholder="Player 3" data-team="B" data-player="3"> <input type="text" class="player-input" placeholder="Player 4" data-team="B" data-player="4"> <input type="text" class="player-input" placeholder="Player 5" data-team="B" data-player="5"> <input type="text" class="player-input" placeholder="Player 6" data-team="B" data-player="6">
-       </div>
-      </div>
-      <div class="team-section">
-       <div class="team-label">
-                <input type="text" class="player-input team-name-input" data-team="C" placeholder="Team C">
-       </div>
-       <div class="players-list">
-        <input type="text" class="player-input" placeholder="Player 1" data-team="C" data-player="1"> <input type="text" class="player-input" placeholder="Player 2" data-team="C" data-player="2"> <input type="text" class="player-input" placeholder="Player 3" data-team="C" data-player="3"> <input type="text" class="player-input" placeholder="Player 4" data-team="C" data-player="4"> <input type="text" class="player-input" placeholder="Player 5" data-team="C" data-player="5"> <input type="text" class="player-input" placeholder="Player 6" data-team="C" data-player="6">
-       </div>
-      </div>
-                 </div>
                    <button class="modal-begin-btn" onclick="beginGameFromModal()">BEGIN GAME</button>
                    <div style="text-align:center; margin-top:10px;">
                        <button class="restart-button" id="clearPlayersBtn" onclick="clearPlayerData()" style="background: linear-gradient(135deg, #ff006e 0%, #ff4081 100%); color: #fff; border: 2px solid #ff006e; margin-right:8px;">CLEAR PLAYER DATA</button>
@@ -700,6 +677,104 @@
             let gameStarted = false;
             let playerNames = { A: {}, B: {}, C: {} };
 
+            // Dynamic player counts per team (min 2, no hard max)
+            let teamSizes = { A: 6, B: 6, C: 6 };
+
+            // --- Dynamic setup modal rendering ---
+            function renderSetupModal() {
+                const container = document.getElementById('teamsContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                teams.forEach(t => {
+                    const size = teamSizes[t];
+                    const section = document.createElement('div');
+                    section.className = 'team-section';
+
+                    // Team name input
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'team-label';
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.className = 'player-input team-name-input';
+                    nameInput.setAttribute('data-team', t);
+                    nameInput.placeholder = `Team ${t}`;
+                    if (playerNames[t]._teamName) nameInput.value = playerNames[t]._teamName;
+                    labelDiv.appendChild(nameInput);
+                    section.appendChild(labelDiv);
+
+                    // Players list
+                    const list = document.createElement('div');
+                    list.className = 'players-list';
+                    list.id = `playersList_${t}`;
+                    for (let i = 1; i <= size; i++) {
+                        const inp = document.createElement('input');
+                        inp.type = 'text';
+                        inp.className = 'player-input';
+                        inp.placeholder = `Player ${i}`;
+                        inp.setAttribute('data-team', t);
+                        inp.setAttribute('data-player', String(i));
+                        inp.value = playerNames[t][i] || '';
+                        list.appendChild(inp);
+                    }
+                    section.appendChild(list);
+
+                    // +/- controls
+                    const controls = document.createElement('div');
+                    controls.style.cssText = 'display:flex; gap:8px; margin-top:10px; justify-content:center;';
+                    const minusBtn = document.createElement('button');
+                    minusBtn.textContent = '− Player';
+                    minusBtn.className = 'restart-button';
+                    minusBtn.style.cssText = 'display:inline-block; padding:6px 10px; font-size:0.8rem; margin:0;';
+                    minusBtn.onclick = () => {
+                        if (teamSizes[t] <= 2) return;
+                        // save current input values before re-render
+                        saveCurrentInputs();
+                        // remove last player name from memory if empty
+                        const last = teamSizes[t];
+                        if (!playerNames[t][last]) delete playerNames[t][last];
+                        teamSizes[t]--;
+                        renderSetupModal();
+                    };
+                    const plusBtn = document.createElement('button');
+                    plusBtn.textContent = '+ Player';
+                    plusBtn.className = 'modal-begin-btn';
+                    plusBtn.style.cssText = 'width:auto; padding:6px 10px; font-size:0.8rem; margin:0;';
+                    plusBtn.onclick = () => {
+                        saveCurrentInputs();
+                        teamSizes[t]++;
+                        renderSetupModal();
+                    };
+                    const countLabel = document.createElement('span');
+                    countLabel.style.cssText = 'color:#00d4ff; font-size:0.85rem; display:flex; align-items:center; min-width:28px; justify-content:center;';
+                    countLabel.textContent = `${size}`;
+                    controls.appendChild(minusBtn);
+                    controls.appendChild(countLabel);
+                    controls.appendChild(plusBtn);
+                    section.appendChild(controls);
+                    container.appendChild(section);
+                });
+            }
+
+            // Save all currently visible input values to playerNames before re-rendering
+            function saveCurrentInputs() {
+                document.querySelectorAll('input.player-input[data-team][data-player]').forEach(inp => {
+                    const team = inp.getAttribute('data-team');
+                    const player = inp.getAttribute('data-player');
+                    if (team && player) {
+                        const val = inp.value.trim();
+                        playerNames[team][player] = val || `${team}${player}`;
+                    }
+                });
+                document.querySelectorAll('.team-name-input').forEach(inp => {
+                    const t = inp.getAttribute('data-team');
+                    const val = inp.value.trim();
+                    if (t) {
+                        if (val) playerNames[t]._teamName = val;
+                        else delete playerNames[t]._teamName;
+                    }
+                });
+            }
+
             // store last-round data & impostors for reveal
             let impostors = [];
             let lastGameData = null;
@@ -715,8 +790,11 @@
 
             // Populate sensible defaults so lookups never hit undefined
             teams.forEach(t => {
-                for (let i = 1; i <= 6; i++) playerNames[t][i] = `${t}${i}`;
+                for (let i = 1; i <= teamSizes[t]; i++) playerNames[t][i] = `${t}${i}`;
             });
+
+            // Render the setup modal with initial state
+            renderSetupModal();
 
             // team display names (defaults)
             const teamDisplayNames = { A: 'Team A', B: 'Team B', C: 'Team C' };
@@ -726,33 +804,20 @@
                 return playerNames[t]._teamName || teamDisplayNames[t] || t;
             }
 
-            // Modal controls (exposed globally for inline onclick attributes)
-            window.openSetupModal = () => setupModal && setupModal.classList.add('visible');
+            window.openSetupModal = () => {
+                renderSetupModal();
+                setupModal && setupModal.classList.add('visible');
+            };
             window.closeSetupModal = () => setupModal && setupModal.classList.remove('visible');
 
             window.beginGameFromModal = () => {
-                // Save player names (only actual input fields)
-                document.querySelectorAll('input.player-input[data-team][data-player]').forEach(input => {
-                    const team = input.getAttribute('data-team');
-                    const player = input.getAttribute('data-player');
-                    if (team && player) {
-                        const name = input.value.trim() || `${team}${player}`;
-                        playerNames[team][player] = name;
-                    }
-                });
+                saveCurrentInputs();
 
-                // Save editable team names (if provided)
-                document.querySelectorAll('.team-name-input').forEach(input => {
-                    const t = input.getAttribute('data-team');
-                    const val = input.value.trim();
-                    if (t) {
-                        if (val) playerNames[t]._teamName = val;
-                        else delete playerNames[t]._teamName;
-                    }
-                });
-
-                // persist player names so they survive reloads
-                try { localStorage.setItem('spyDealerPlayers', JSON.stringify(playerNames)); } catch (e) { /* ignore */ }
+                // persist player names & teamSizes so they survive reloads
+                try {
+                    const data = Object.assign({}, playerNames, { _teamSizes: teamSizes });
+                    localStorage.setItem('spyDealerPlayers', JSON.stringify(data));
+                } catch (e) { /* ignore */ }
 
                 closeSetupModal();
                 startRound();
@@ -761,9 +826,9 @@
             // Start a round
             window.startRound = () => {
                 currentWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
-                spies.A = Math.floor(Math.random() * 6) + 1;
-                spies.B = Math.floor(Math.random() * 6) + 1;
-                spies.C = Math.floor(Math.random() * 6) + 1;
+                spies.A = Math.floor(Math.random() * teamSizes.A) + 1;
+                spies.B = Math.floor(Math.random() * teamSizes.B) + 1;
+                spies.C = Math.floor(Math.random() * teamSizes.C) + 1;
 
                 // capture impostors (team, index, name) at round start
                 impostors = teams.map(t => {
@@ -776,6 +841,7 @@
                     startedAt: Date.now(),
                     word: currentWord,
                     spies: { A: spies.A, B: spies.B, C: spies.C },
+                    teamSizes: Object.assign({}, teamSizes),
                     impostors: impostors,
                     currentTeamIndex: 0,
                     currentPlayerInTeam: 1,
@@ -859,7 +925,7 @@
 
             function moveToNextPlayer() {
                 currentPlayerInTeam++;
-                if (currentPlayerInTeam > 6) {
+                if (currentPlayerInTeam > teamSizes[teams[currentTeamIndex]]) {
                     currentTeamIndex++;
                     currentPlayerInTeam = 1;
                     if (currentTeamIndex >= teams.length) {
@@ -939,9 +1005,11 @@
                 } catch (e) { /* ignore */ }
             }
 
-            // Save player names helper
             function savePlayerNamesToStorage() {
-                try { localStorage.setItem('spyDealerPlayers', JSON.stringify(playerNames)); } catch (e) { /* ignore */ }
+                try {
+                    const data = Object.assign({}, playerNames, { _teamSizes: teamSizes });
+                    localStorage.setItem('spyDealerPlayers', JSON.stringify(data));
+                } catch (e) { /* ignore */ }
             }
 
             // Restore saved player names and prefill modal inputs
@@ -949,39 +1017,37 @@
                 try {
                     const saved = JSON.parse(localStorage.getItem('spyDealerPlayers') || 'null');
                     if (!saved) return;
+                    // restore teamSizes if stored
+                    if (saved._teamSizes) {
+                        teams.forEach(t => {
+                            if (saved._teamSizes[t] && saved._teamSizes[t] >= 2) {
+                                teamSizes[t] = saved._teamSizes[t];
+                            }
+                        });
+                    }
                     teams.forEach(t => {
                         const teamSaved = saved[t] || {};
-                        for (let i = 1; i <= 6; i++) {
+                        const size = teamSizes[t];
+                        for (let i = 1; i <= size; i++) {
                             if (typeof teamSaved[i] !== 'undefined') playerNames[t][i] = teamSaved[i];
                         }
                         if (teamSaved._teamName) playerNames[t]._teamName = teamSaved._teamName;
-                        // update modal inputs if present
-                        const teamInput = document.querySelector('.team-name-input[data-team="' + t + '"]');
-                        if (teamInput && playerNames[t]._teamName) teamInput.value = playerNames[t]._teamName;
-                        for (let i = 1; i <= 6; i++) {
-                            const pInput = document.querySelector('input.player-input[data-team="' + t + '"][data-player="' + i + '"]');
-                            if (pInput) pInput.value = playerNames[t][i] || '';
-                        }
                     });
+                    // re-render modal so inputs match restored state
+                    renderSetupModal();
                 } catch (e) { /* ignore */ }
             }
 
-            // Clear saved player data (requires explicit button press)
             window.clearPlayerData = () => {
                 if (!confirm('Erase saved player names and team names? This will reset to defaults.')) return;
                 try { localStorage.removeItem('spyDealerPlayers'); } catch (e) {}
                 // reset in-memory defaults
+                teamSizes = { A: 6, B: 6, C: 6 };
                 teams.forEach(t => {
+                    playerNames[t] = {};
                     for (let i = 1; i <= 6; i++) playerNames[t][i] = `${t}${i}`;
-                    if (playerNames[t]._teamName) delete playerNames[t]._teamName;
                 });
-                // update modal inputs if visible
-                document.querySelectorAll('.team-name-input').forEach(i => i.value = '');
-                document.querySelectorAll('input.player-input[data-team][data-player]').forEach(inp => {
-                    const team = inp.getAttribute('data-team');
-                    const player = inp.getAttribute('data-player');
-                    inp.value = playerNames[team][player] || '';
-                });
+                renderSetupModal();
                 alert('Player names cleared.');
             };
 
@@ -1058,6 +1124,10 @@
                     if (saved) {
                         lastGameData = saved;
                         impostors = saved.impostors || [];
+                        // restore team sizes if saved
+                        if (saved.teamSizes) {
+                            teams.forEach(t => { if (saved.teamSizes[t] >= 2) teamSizes[t] = saved.teamSizes[t]; });
+                        }
                     }
                 } catch (e) {
                     // ignore parse errors
